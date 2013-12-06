@@ -1,0 +1,68 @@
+CROSS_HOST="x86_64-w64-mingw32"
+inherit cross
+
+NAME="mingw64-x86_64-db"
+VERSION=5.3.21
+RELEASE=1
+CATEGORY="Devel"
+SUMMARY="Oracle Berkeley DB for Win64 toolchain"
+DESCRIPTION="Oracle Berkeley DB is the industry-leading open source, embeddable
+database engine that provides developers with fast, reliable, local persistence
+with zero administration. Oracle Berkeley DB is a library that links directly
+into your application. Your application makes simple function calls, rather
+than sending messages to a remote server, eliminating the performance penalty
+of client-server architectures."
+HOMEPAGE="http://www.oracle.com/technology/products/berkeley-db"
+SRC_URI="http://download.oracle.com/berkeley-db/db-${VERSION%.${PV[4]}}.tar.gz"
+SRC_DIR="db-${VERSION%.${PV[4]}}"
+PATCH_URI="
+	5.3-mingw.patch
+	5.3-vpath.patch
+"
+
+DIFF_EXCLUDES="aclocal.m4 config.* configure db.jar install-sh ltmain.sh libtool.m4 lt*.m4"
+
+src_compile() {
+	local slot=${PV[1]}.${PV[2]}
+
+	check_prog_req libtoolize libtool
+
+	cd ${S}/dist
+	ac_macrodir=aclocal libtoolize --copy --force --install || error "berkdb: libtoolize failed"
+	./s_config || error "s_config failed"
+
+	cd ${S}/lang/sql/sqlite
+	cygautoreconf
+
+	cd ${B}
+	CYGCONF_SOURCE=${S}/dist \
+	cygconf \
+		--with-mutex=win32/gcc \
+		--enable-compat185 \
+		--enable-cxx \
+		--enable-dynamic \
+		--enable-mingw \
+		--enable-sql \
+		--disable-java \
+		--disable-tcl \
+		--disable-test
+
+	cygmake libdb-${slot}.la
+	cygmake C_OBJS="libdb-${slot}.la" UTIL_PROGS=
+}
+
+src_install() {
+	local slot=${PV[1]}.${PV[2]}
+
+	cd ${B}
+	cygmake install_include install_lib DESTDIR=${D} emode=755 fmode=644
+
+	# replace unslotted libs with symlinks
+	rm -f ${D}${CROSS_LIBDIR}/libdb{_cxx,}.a
+	dosym libdb-${slot}.a ${CROSS_LIBDIR}/libdb.a
+	dosym libdb-${slot}.dll.a ${CROSS_LIBDIR}/libdb.dll.a
+	dosym libdb_cxx-${slot}.a ${CROSS_LIBDIR}/libdb_cxx.a
+	dosym libdb_cxx-${slot}.dll.a ${CROSS_LIBDIR}/libdb_cxx.dll.a
+	dosym libdb_sql-${slot}.a ${CROSS_LIBDIR}/libdb_sql.a
+	dosym libdb_sql-${slot}.dll.a ${CROSS_LIBDIR}/libdb_sql.dll.a
+}
