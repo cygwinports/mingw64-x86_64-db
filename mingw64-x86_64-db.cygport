@@ -2,7 +2,7 @@ CROSS_HOST="x86_64-w64-mingw32"
 inherit cross
 
 NAME="mingw64-x86_64-db"
-VERSION=5.3.21
+VERSION=5.3.28
 RELEASE=1
 CATEGORY="Devel"
 SUMMARY="Oracle Berkeley DB for Win64 toolchain"
@@ -41,6 +41,7 @@ src_compile() {
 		--enable-compat185 \
 		--enable-cxx \
 		--enable-dynamic \
+		--enable-static \
 		--enable-mingw \
 		--enable-sql \
 		--disable-java \
