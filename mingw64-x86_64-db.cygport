@@ -3,7 +3,7 @@ inherit cross
 
 NAME="mingw64-x86_64-db"
 VERSION=5.3.28
-RELEASE=1
+RELEASE=2
 CATEGORY="Devel"
 SUMMARY="Oracle Berkeley DB for Win64 toolchain"
 DESCRIPTION="Oracle Berkeley DB is the industry-leading open source, embeddable
@@ -16,6 +16,7 @@ HOMEPAGE="http://www.oracle.com/technology/products/berkeley-db"
 SRC_URI="http://download.oracle.com/berkeley-db/db-${VERSION%.${PV[4]}}.tar.gz"
 SRC_DIR="db-${VERSION%.${PV[4]}}"
 PATCH_URI="
+	http://pkgs.fedoraproject.org/cgit/rpms/libdb.git/plain/db-5.3.21-memp_stat-upstream-fix.patch
 	5.3-mingw.patch
 	5.3-vpath.patch
 "
@@ -35,13 +36,14 @@ src_compile() {
 	cygautoreconf
 
 	cd ${B}
+	CFLAGS+=" -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_DISABLE_DIRSYNC=1 -DSQLITE_ENABLE_FTS3=3 -DSQLITE_ENABLE_RTREE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_ENABLE_UNLOCK_NOTIFY=1 -I../../../lang/sql/sqlite/ext/fts3"
 	CYGCONF_SOURCE=${S}/dist \
 	cygconf \
 		--with-mutex=win32/gcc \
 		--enable-compat185 \
 		--enable-cxx \
 		--enable-dynamic \
-		--enable-static \
+		--disable-static \
 		--enable-mingw \
 		--enable-sql \
 		--disable-java \
@@ -60,10 +62,7 @@ src_install() {
 
 	# replace unslotted libs with symlinks
 	rm -f ${D}${CROSS_LIBDIR}/libdb{_cxx,}.a
-	dosym libdb-${slot}.a ${CROSS_LIBDIR}/libdb.a
 	dosym libdb-${slot}.dll.a ${CROSS_LIBDIR}/libdb.dll.a
-	dosym libdb_cxx-${slot}.a ${CROSS_LIBDIR}/libdb_cxx.a
 	dosym libdb_cxx-${slot}.dll.a ${CROSS_LIBDIR}/libdb_cxx.dll.a
-	dosym libdb_sql-${slot}.a ${CROSS_LIBDIR}/libdb_sql.a
 	dosym libdb_sql-${slot}.dll.a ${CROSS_LIBDIR}/libdb_sql.dll.a
 }
